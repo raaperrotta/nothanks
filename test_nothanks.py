@@ -4,7 +4,7 @@ import always_pass, always_take, coin_toss
 
 def test_player_score():
 
-    player = nothanks.Player(always_pass)
+    player = nothanks.Player('always_pass')
 
     player.cards = []
     player.tokens = 0
@@ -25,7 +25,7 @@ def test_player_score():
 
 def test_simple_game():
 
-    strategies = [always_pass, always_take, coin_toss]
+    strategies = ['always_pass', 'always_take', 'coin_toss']
     players = [nothanks.Player(x) for x in strategies]
     game = nothanks.Game(players)
 

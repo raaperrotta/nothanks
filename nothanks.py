@@ -1,6 +1,6 @@
 from random import shuffle
 from itertools import cycle
-
+from importlib import import_module
 
 class Player():
 
@@ -9,7 +9,8 @@ class Player():
         self.tokens = 11
         self.cards = []
 
-        self.strategy = strategy.run
+        self.strategy_name = strategy
+        self.strategy = import_module(strategy).run
 
     def get_score(self):
 
