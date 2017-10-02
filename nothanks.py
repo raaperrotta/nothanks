@@ -51,26 +51,27 @@ class Game():
 
     def run(self):
 
+        card = self.deck.pop()
+        pot = 0
+
         # Play until out of cards
-        while self.deck:
+        for player in cycle(self.players):
+            playerinfo = [player.get_info() for player in self.players]
 
-            # Deal a card
-            card = self.deck.pop()
-            pot = 0
+            # If current player is out of tokens, they must take it;
+            # otherwise, ask if current player wants it
+            if player.tokens == 0 or player.strategy(card, pot, playerinfo,
+                                                     self.history):
+                player.cards.append(card)
+                player.tokens += pot
+                card = self.deck.pop()
+                pot = 0
+            else:
+                player.tokens -= 1
+                pot += 1
 
-            for player in cycle(self.players):
-                playerinfo = [player.get_info() for player in self.players]
-                # If current player is out of tokens, they must take it;
-                # otherwise, ask if current player wants it
-                if player.tokens == 0 or player.strategy(card, pot, playerinfo,
-                                                         self.history):
-                    player.cards.append(card)
-                    player.tokens += pot
-                    pot = 0
-                    break
-                else:
-                    player.tokens -= 1
-                    pot += 1
+            if not self.deck:
+                break
 
         scores = [player.get_score() for player in self.players]
         winning_score = min(scores)

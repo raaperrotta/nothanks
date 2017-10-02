@@ -1,11 +1,10 @@
 import nothanks
-import always_pass, always_take, coin_toss
-from random import choices
 import pandas as pd
+from random import choices
 
 
 # The contenders
-strategies = ['always_pass', 'always_take', 'coin_toss']
+strategies = ['coin_toss', 'threshold']
 
 game_sizes = [3, 4, 5]
 
@@ -14,8 +13,7 @@ results = {}
 for num_players in game_sizes:
     results[num_players] = {}
     for strategy in strategies:
-        results[num_players][strategy] = 0.0
-
+        results[num_players][strategy] = 0
 
 for num_players in game_sizes:
     for n in range(100):
@@ -26,9 +24,12 @@ for num_players in game_sizes:
         game = nothanks.Game(players)
         winners, scores = game.run()
 
-        for strategy in strategies:
-            results[num_players][strategy] -= 1/num_players
+        for strategy in competitors:
+            results[num_players][strategy] -= 60 // num_players
         for winner in winners:
-            results[num_players][winner.strategy_name] += 1/len(winners)
+            results[num_players][winner.strategy_name] += 60 // len(winners)
 
-print(pd.DataFrame(results))
+results = pd.DataFrame(results)
+results['combined'] = results.sum(axis=1)
+results.loc['total', :] = results.sum(axis=0)
+print(results)
