@@ -1,16 +1,19 @@
 from random import shuffle
 from itertools import cycle
 from importlib import import_module
+from sortedcontainers import SortedSet
+
 
 class Player():
 
-    def __init__(self, strategy):
+    def __init__(self, name, strategy):
 
-        self.tokens = 11
-        self.cards = []
+        self.id = None  # assigned by the game
+        self.tokens = None
+        self.cards = SortedSet
 
-        self.strategy_name = strategy
-        self.strategy = import_module(strategy).run
+        self.strategy_name = name
+        self.strategy = strategy
 
     def get_score(self):
 
@@ -32,22 +35,23 @@ class Player():
 
 class Game():
 
-    def __init__(self, players):
+    def __init__(self, players, starting_tokens=11,
+                 low_card=3, high_card=35, discard=9):
 
         # A list of Player objects (3-5)
-        assert 3 <= len(players) <= 5
-        for player in players:
-            assert isinstance(player, Player)
         self.players = players
         shuffle(self.players)  # randomize play order
+        for idx, player in enumerate(players):
+            player.id = idx
+            player.tokens = starting_tokens
 
         # A list of game actions
         self.history = []
 
         # The deck of cards (shuffle then discard first 9)
-        self.deck = list(range(3, 36))
+        self.deck = list(range(low_card, high_card + 1))
         shuffle(self.deck)
-        self.deck = self.deck[9:]
+        self.deck = self.deck[discard:]
 
     def run(self):
 
@@ -64,10 +68,14 @@ class Game():
                                                      self.history):
                 player.cards.append(card)
                 player.tokens += pot
+                self.history.append([self.players.index(player),
+                                     card, pot, True])
                 card = self.deck.pop()
                 pot = 0
             else:
                 player.tokens -= 1
+                self.history.append([self.players.index(player),
+                                     card, pot, False])
                 pot += 1
 
             if not self.deck:

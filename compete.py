@@ -1,12 +1,15 @@
 import nothanks
 import pandas as pd
 from random import choices
+import threshold
 
 
 # The contenders
-strategies = ['coin_toss', 'threshold']
+strategies = {}
+for n in range(1, 6):
+    strategies['threshold_{:02d}'.format(n)] = threshold.Player(n)
 
-game_sizes = [3, 4, 5]
+game_sizes = [2, 3]
 
 # A dictionary of scores
 results = {}
@@ -16,12 +19,13 @@ for num_players in game_sizes:
         results[num_players][strategy] = 0
 
 for num_players in game_sizes:
-    for n in range(100):
+    for n in range(1000):
 
-        competitors = choices(strategies, k=num_players)
+        competitors = choices(list(strategies.keys()), k=num_players)
 
-        players = [nothanks.Player(x) for x in competitors]
-        game = nothanks.Game(players)
+        players = [nothanks.Player(x, strategies[x]) for x in competitors]
+        game = nothanks.Game(players, starting_tokens=3,
+                             low_card=2, high_card=7, discard=2)
         winners, scores = game.run()
 
         for strategy in competitors:
