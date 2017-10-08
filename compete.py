@@ -2,10 +2,11 @@ import nothanks
 import pandas as pd
 from random import sample  # use choices for sampling with replacement
 import threshold
-
+import sequence_threshold
 
 # The contenders
-strategies = [threshold.Player(n) for n in [5, 8, 11, 14, 17]]
+strategies = [threshold.Player(n) for n in [5, 10, 15]]
+strategies += [sequence_threshold.Player(n) for n in [5, 10, 15]]
 
 game_sizes = [2, 3]
 
@@ -17,7 +18,7 @@ for num_players in game_sizes:
         results[num_players][strategy] = 0
 
 for num_players in game_sizes:
-    for n in range(1000):
+    for n in range(10000):
 
         selected_strategies = sample(strategies, num_players)
         winners, scores = nothanks.Game(selected_strategies).run()

@@ -10,4 +10,4 @@ class Player(nothanks.Player):
         return card - pot <= self.threshold
 
     def __str__(self):
-        return 'Threshold {} player ({})'.format(self.threshold, id(self))
+        return 'Threshold {} player'.format(self.threshold)
