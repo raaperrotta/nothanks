@@ -1,21 +1,26 @@
-from random import shuffle
+"""Define the No Thanks Game and Player."""
+
 from itertools import cycle
-from importlib import import_module
+from random import shuffle
 from sortedcontainers import SortedSet
 
 
-class Player():
-    """ Define base class for No Thanks players
+class Player():  # pylint: disable=unused-argument
+    """Define the base class for No Thanks players.
+
     More advanced players must be subclasses of Player. This base class
     implements a playable, but poor-performing, strategy of taking cards only
     when out of coins.
+
+    When subclassing Player, the creator (__init__) must be callable with no
+    arguments as this is how it will be called during the competition. Use
+    default arguments to define a flexible creator that can also accept no
+    arguments.
     """
-    def __init__(self, starting_coins=11,
-                 low_card=3, high_card=35, discard=9):
-        pass
 
     def update(self, player_id, card, pot, action):
-        """ Receive action notification from game
+        """Receive action notification from game.
+
         After every player's turn, all players will be notified of the action
         chosen (take card and pot or pay one and pass).
         player_id: a unique identifier for the player. Will be the same across
@@ -27,14 +32,16 @@ class Player():
         pass
 
     def play(self, card, pot):
-        """ Return decision to take card and pot or not
+        """Return decision to take card and pot or not.
+
         card: card value
         pot: coins in pot
         """
         return False
 
     def prepare_for_new_game(self, player_order):
-        """ Prepare for a new game
+        """Prepare for a new game.
+
         When the player tracks the game state, use this function to erase prior
         game state and start fresh.
         player_order: a list of player instance ids specifying the order of play
@@ -43,10 +50,12 @@ class Player():
 
 
 class Game():
-    """ Define No Thanks Game
+    """Define No Thanks Game.
+
     Create an instance of this object for each No Thanks game, even when playing
     repeated games with the same players.
     """
+
     def __init__(self, players, starting_coins=11,
                  low_card=3, high_card=35, discard=9):
         # Too keep track of player states for rule enforcement and scoring
@@ -65,11 +74,11 @@ class Game():
         del self.deck[:discard]
 
     def deal_card(self):
-        """ Remove first card from deck and return it """
+        """Remove first card from deck and return it."""
         return self.deck.pop(0)
 
     def run(self):
-        """ Set-up, play, and score a game of No Thanks """
+        """Set-up, play, and score a game of No Thanks."""
         # Have players prepare for new game and tell them the player order
         player_order = [id(p) for p in self.players]
         for player in self.players:
@@ -114,7 +123,7 @@ class Game():
         return winners, scores
 
     def get_scores(self):
-        """ Calculate score of game """
+        """Calculate score of game."""
         scores = {}
         for player in self.players:
             player_id = id(player)
@@ -125,5 +134,5 @@ class Game():
                     score += card
                 prev = card
             score -= self.state[player_id]['coins']
-            scores[player] = score
+            scores[id(player)] = score
         return scores
