@@ -101,9 +101,11 @@ class Game():
         player_state = self.state[player_id]
         while True:
             logger.debug(('TURN: Player {} is offered card {} and {} coin{} ' +
-                          'and has {} and {} coin{}.').format(player, card, pot, 's'[pot==1:],
-                                                     list(player_state['cards']),
-                                                     player_state['coins'], 's'[player_state['coins']==1:]))
+                          'and has {} and {} coin{}.'
+                          ).format(player, card, pot, 's'[pot==1:],
+                                   list(player_state['cards']),
+                                   player_state['coins'],
+                                   's'[player_state['coins']==1:]))
             # If current player is out of tokens, they must take it;
             # otherwise, ask if current player wants it
             took_card = player_state['coins'] == 0 or player.play(card, pot)
@@ -116,9 +118,10 @@ class Game():
                 player_state['cards'].add(card)
                 player_state['coins'] += pot
                 logger.debug(('TAKE: Player {} took them and now ' +
-                              'has {} and {} coin{}.').format(player,
-                                                        list(player_state['cards']),
-                                                        player_state['coins'], 's'[player_state['coins']==1:]))
+                              'has {} and {} coin{}.'
+                              ).format(player, list(player_state['cards']),
+                                       player_state['coins'],
+                                       's'[player_state['coins']==1:]))
                 if self.deck:
                     card = self.deal_card()
                     pot = 0
@@ -129,8 +132,10 @@ class Game():
             else:
                 player_state['coins'] -= 1
                 logger.debug(('PASS: Player {} said "No Thanks!" and now ' +
-                              'has {} coin{}. The pot now has {} coin{}.').format(player,
-                                                       player_state['coins'], 's'[player_state['coins']==1:], pot, 's'[pot==1:]))
+                              'has {} coin{}. The pot now has {} coin{}.'
+                              ).format(player, player_state['coins'],
+                                       's'[player_state['coins']==1:],
+                                       pot, 's'[pot==1:]))
                 pot += 1
                 player = next(player_cycler)
                 player_id = id(player)
