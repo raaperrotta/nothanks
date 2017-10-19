@@ -4,7 +4,7 @@ from copy import deepcopy
 import logging
 import networkx as nx
 import pandas as pd
-from progress.bar import Bar as ProgressBar
+from progress.bar import ChargingBar as ProgressBar
 from random import random, shuffle
 from sortedcontainers import SortedSet
 import sys
@@ -237,7 +237,7 @@ class game_tree():
                    for _ in range(self.num_players)]
         # Simulate self-play
         if print_progress:
-            iterable = ProgressBar('Charging').iter(range(num_games))
+            iterable = ProgressBar('Training').iter(range(num_games))
         else:
             iterable = range(num_games)
         for _ in iterable:

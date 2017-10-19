@@ -2,6 +2,7 @@
 
 from importlib import import_module
 from random import sample  # use choices for sampling with replacement
+from progress.bar import ChargingBar as ProgressBar
 from time import time
 
 import logging
@@ -27,7 +28,7 @@ def compete(players):
             results[num_players][id(player)] = 0
 
     for num_players in game_sizes:
-        for _ in range(1000):
+        for _ in ProgressBar('Competing').iter(range(1000)):
 
             selected_players = sample(players, num_players)
             winners, _ = nothanks.Game(selected_players).run()
