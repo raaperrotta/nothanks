@@ -6,7 +6,7 @@ from random import shuffle
 from sortedcontainers import SortedSet
 
 logger = logging.getLogger(__name__)
-# It is poor practice to configura a logger in a module, instead, configure it as needed wherever it is used.
+# It is poor practice to configure a logger in a module, instead, configure it as needed wherever it is used.
 # logger.setLevel(level=logging.DEBUG)
 # logger.addHandler(logging.StreamHandler(sys.stdout))
 
@@ -88,7 +88,11 @@ class Game():
         logger.debug('START: Starting new game with players {}.'.format(self.players))
         player_order = [id(p) for p in self.players]
         for player in self.players:
-            player.prepare_for_new_game(player_order)
+            try:
+                player.prepare_for_new_game(player_order)
+            except Exception as e:
+                logger.info(('Player {} raised an exception during the ' +
+                             '"prepare_for_new_game" step.').format(player))
 
         # Deal first card
         card = self.deal_card()
@@ -108,11 +112,20 @@ class Game():
                                    's'[player_state['coins']==1:]))
             # If current player is out of tokens, they must take it;
             # otherwise, ask if current player wants it
-            took_card = player_state['coins'] == 0 or player.play(card, pot)
+            try:
+                took_card = player_state['coins'] == 0 or player.play(card, pot)
+            except Exception as e:
+                took_card = False
+                logger.info(('Player {} raised an exception during the ' +
+                             '"play" step.').format(player))
 
             # Notify all players of action chosen (with card and pot from beginning of turn)
             for p in self.players:
-                p.update(player_id, card, pot, took_card)
+                try:
+                    p.update(player_id, card, pot, took_card)
+                except Exception as e:
+                    logger.info(('Player {} raised an exception during the ' +
+                                '"update" step.').format(player))
 
             if took_card:
                 player_state['cards'].add(card)

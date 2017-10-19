@@ -1,5 +1,6 @@
 import nothanks
 from sortedcontainers import SortedSet
+import pytest
 
 def test_scoring():
     """Test the method of nothanks.Game that calculates each player's score"""
@@ -52,3 +53,27 @@ def test_cards():
         assert low_card <= game.deal_card() <= high_card
 
     assert num_cards == high_card + 1 - low_card - discard
+
+def test_bad_player():
+
+    class BadPlayer(nothanks.Player):
+        def play():  # will raise exception because of bad argument count
+            pass
+        def update():  # will raise exception because of bad argument count
+            pass
+        def prepare_for_new_game():  # will raise exception because of bad argument count
+            pass
+
+    bad_player = BadPlayer()
+    players = [nothanks.Player(), nothanks.Player(), bad_player]
+    game = nothanks.Game(players)
+
+    # Double-check that these raise an error
+    with pytest.raises(Exception):
+        bad_player.play(35, 0)
+    with pytest.raises(Exception):
+        bad_player.update(id(bad_player), 35, 0, False)
+    with pytest.raises(Exception):
+        bad_player.prepare_for_new_game([id(p) for p in players])
+    # Test that the game captures the error
+    game.run()
