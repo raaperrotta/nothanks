@@ -13,7 +13,7 @@ import pandas as pd
 import nothanks
 
 
-def compete(players):
+def compete(players, num_rounds=1000):
     """Create and run No Thanks competition."""
     assert len(players) >= 3, ("Need at least 3 players to play No Thanks! ",
                                "(only have {})".format(len(players)))
@@ -28,15 +28,15 @@ def compete(players):
             results[num_players][id(player)] = 0
 
     for num_players in game_sizes:
-        for _ in ProgressBar('Competing').iter(range(1000)):
+        for _ in ProgressBar('Competing').iter(range(num_rounds)):
 
             selected_players = sample(players, num_players)
             winners, _ = nothanks.Game(selected_players).run()
 
             for player in selected_players:
-                results[num_players][id(player)] -= 60 // num_players
+                results[num_players][id(player)] -= 1 / num_players / num_rounds
             for winner in winners:
-                results[num_players][winner] += 60 // len(winners)
+                results[num_players][winner] += 1 / len(winners) / num_rounds
 
     results = pd.DataFrame(results)
     results['combined'] = results.sum(axis=1)
