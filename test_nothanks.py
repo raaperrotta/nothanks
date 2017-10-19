@@ -84,7 +84,7 @@ def test_player_action():
 
     players = [nothanks.Player(), nothanks.Player(), nothanks.Player()]
     game = nothanks.Game(players)
-    player = players[0]
+    player = next(game.player_cycler)
     state = game.state[id(player)]
 
     card = game.deal_card()
@@ -99,7 +99,7 @@ def test_update_game_take():
 
     players = [nothanks.Player(), nothanks.Player(), nothanks.Player()]
     game = nothanks.Game(players)
-    player = players[0]
+    player = next(game.player_cycler)
     state = game.state[id(player)]
 
     # When a player takes a card and pot:
@@ -124,7 +124,7 @@ def test_update_game_pass():
 
     players = [nothanks.Player(), nothanks.Player(), nothanks.Player()]
     game = nothanks.Game(players)
-    player = players[0]
+    player = next(game.player_cycler)
     state = game.state[id(player)]
 
     # When a player passes:
