@@ -4,6 +4,9 @@ from importlib import import_module
 from random import sample  # use choices for sampling with replacement
 from time import time
 
+import logging
+import sys
+
 import pandas as pd
 
 import nothanks
@@ -44,6 +47,12 @@ def main():
     """Select strategies for No Thanks competition, run, and print results."""
     strategies = ['nothanks', 'threshold', 'sequence_threshold']
 
+    # Set logging behavior for No Thanks modules
+    for name in ['nothanks'] + strategies:
+        logger = logging.getLogger(name)
+        logger.setLevel(level=logging.WARNING)  # use DEBUG to see verbose output
+        logger.addHandler(logging.StreamHandler(sys.stdout))
+        
     players = []
     names = {}
     for strategy in strategies:

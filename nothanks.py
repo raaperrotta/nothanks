@@ -1,9 +1,14 @@
 """Define the No Thanks Game and Player."""
 
 from itertools import cycle
+import logging
 from random import shuffle
 from sortedcontainers import SortedSet
 
+logger = logging.getLogger(__name__)
+# It is poor practice to configura a logger in a module, instead, configure it as needed wherever it is used.
+# logger.setLevel(level=logging.DEBUG)
+# logger.addHandler(logging.StreamHandler(sys.stdout))
 
 class Player():  # pylint: disable=unused-argument
     """Define the base class for No Thanks players.
@@ -80,6 +85,7 @@ class Game():
     def run(self):
         """Set-up, play, and score a game of No Thanks."""
         # Have players prepare for new game and tell them the player order
+        logger.debug('START: Starting new game with players {}.'.format(self.players))
         player_order = [id(p) for p in self.players]
         for player in self.players:
             player.prepare_for_new_game(player_order)
@@ -89,27 +95,46 @@ class Game():
         pot = 0
 
         # Play until out of cards (see break statement below)
-        for player_id, player in cycle(zip(player_order, self.players)):
-            player_state = self.state[player_id]
+        player_cycler = cycle(self.players)
+        player = next(player_cycler)
+        player_id = id(player)
+        player_state = self.state[player_id]
+        while True:
+            logger.debug(('TURN: Player {} is offered card {} and {} coin{} ' +
+                          'and has {} and {} coin{}.').format(player, card, pot, 's'[pot==1:],
+                                                     list(player_state['cards']),
+                                                     player_state['coins'], 's'[player_state['coins']==1:]))
             # If current player is out of tokens, they must take it;
             # otherwise, ask if current player wants it
             took_card = player_state['coins'] == 0 or player.play(card, pot)
-            if took_card:
-                player_state['cards'].add(card)
-                player_state['coins'] += pot
-                card = self.deal_card()
-                pot = 0
-            else:
-                player_state['coins'] -= 1
-                pot += 1
 
-            # Notify all players of action chosen
+            # Notify all players of action chosen (with card and pot from beginning of turn)
             for p in self.players:
                 p.update(player_id, card, pot, took_card)
 
-            # End when deck is empty
-            if not self.deck:
-                break
+            if took_card:
+                player_state['cards'].add(card)
+                player_state['coins'] += pot
+                logger.debug(('TAKE: Player {} took them and now ' +
+                              'has {} and {} coin{}.').format(player,
+                                                        list(player_state['cards']),
+                                                        player_state['coins'], 's'[player_state['coins']==1:]))
+                if self.deck:
+                    card = self.deal_card()
+                    pot = 0
+                    logger.debug('DEAL: The next card is {}. (Pot reset to 0.)'.format(card))
+                else:  # game over
+                    logger.debug('END: Game over!')
+                    break
+            else:
+                player_state['coins'] -= 1
+                logger.debug(('PASS: Player {} said "No Thanks!" and now ' +
+                              'has {} coin{}. The pot now has {} coin{}.').format(player,
+                                                       player_state['coins'], 's'[player_state['coins']==1:], pot, 's'[pot==1:]))
+                pot += 1
+                player = next(player_cycler)
+                player_id = id(player)
+                player_state = self.state[player_id]
 
         # Tally final scores
         scores = self.get_scores()
@@ -119,7 +144,8 @@ class Game():
         for player_id, score in scores.items():
             if score == winning_score:
                 winners.append(player_id)
-        # Return the list of winners and all players' scores
+        # Return the list of winners (ids) and all players' scores
+        logger.debug('RESULT: {}'.format(scores))
         return winners, scores
 
     def get_scores(self):
