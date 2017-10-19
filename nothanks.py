@@ -72,6 +72,7 @@ class Game():
         # A list of Player objects
         self.players = players.copy()  # keep a local copy of the player list
         shuffle(self.players)  # randomize play order
+        self.player_cycler = cycle(self.players)
 
         # The deck of cards (create, shuffle, then discard)
         self.deck = list(range(low_card, high_card + 1))
@@ -81,6 +82,70 @@ class Game():
     def deal_card(self):
         """Remove first card from deck and return it."""
         return self.deck.pop(0)
+
+    def player_action(self, player, card, pot):
+        """Run a single turn of No Thanks."""
+        player_state = self.state[id(player)]
+        logger.debug(('TURN: Player {} is offered card {} and {} coin{} ' +
+                      'and has {} and {} coin{}.'
+                     ).format(player, card, pot, 's'[pot==1:],
+                              list(player_state['cards']),
+                              player_state['coins'],
+                              's'[player_state['coins']==1:]))
+        # If current player is out of tokens, they must take it;
+        # otherwise, ask if current player wants it
+        try:
+            took_card = player_state['coins'] == 0 or player.play(card, pot)
+        except Exception as e:
+            took_card = False
+            logger.info(('Player {} raised an exception during the ' +
+                            '"play" step.').format(player))
+        return took_card
+
+    def notify_players(self, player, card, pot, took_card):
+        """Notify all players of action chosen."""
+        player_id = id(player)
+        for p in self.players:
+            try:
+                p.update(player_id, card, pot, took_card)
+            except Exception as e:
+                logger.info(('Player {} raised an exception during the ' +
+                            '"update" step.').format(player))
+
+    def update_game(self, player, card, pot, took_card):
+        """Update game state and return current player, card, and pot."""
+        player_state = self.state[id(player)]
+        if took_card:
+            # Add card and pot to player collection.
+            assert card not in player_state['cards'], 'Player {} already has {}! ({})'.format(player, card, list(player_state['cards']))
+            player_state['cards'].add(card)
+            player_state['coins'] += pot
+            logger.debug(('TAKE: Player {} took them and now ' +
+                            'has {} and {} coin{}.'
+                            ).format(player, list(player_state['cards']),
+                                    player_state['coins'],
+                                    's'[player_state['coins']==1:]))
+            if self.deck:  # there are cards left in the deck
+                next_card = self.deal_card()
+                new_pot = 0
+                next_player = player  # same player goes again
+                logger.debug('DEAL: The next card is {}. (Pot reset to {}.)'.format(next_card, new_pot))
+            else:  # no cards left; game over
+                next_player = next_card = new_pot = None
+                logger.debug('END: Game over!')
+        else:
+            # remove a coin from the player's collection.
+            assert player_state['coins'] > 0, 'Player {} passed but has no coins!'.format(player)
+            player_state['coins'] -= 1
+            next_card = card
+            new_pot = pot + 1
+            next_player = next(self.player_cycler)
+            logger.debug(('PASS: Player {} said "No Thanks!" and now ' +
+                            'has {} coin{}. The pot now has {} coin{}.'
+                            ).format(player, player_state['coins'],
+                                    's'[player_state['coins']==1:],
+                                    new_pot, 's'[new_pot==1:]))
+        return next_player, next_card, new_pot
 
     def run(self):
         """Set-up, play, and score a game of No Thanks."""
@@ -94,65 +159,14 @@ class Game():
                 logger.info(('Player {} raised an exception during the ' +
                              '"prepare_for_new_game" step.').format(player))
 
-        # Deal first card
+        # Play until out of cards (when update_game returns None, None, None)
+        player = next(self.player_cycler)
         card = self.deal_card()
         pot = 0
-
-        # Play until out of cards (see break statement below)
-        player_cycler = cycle(self.players)
-        player = next(player_cycler)
-        player_id = id(player)
-        player_state = self.state[player_id]
-        while True:
-            logger.debug(('TURN: Player {} is offered card {} and {} coin{} ' +
-                          'and has {} and {} coin{}.'
-                          ).format(player, card, pot, 's'[pot==1:],
-                                   list(player_state['cards']),
-                                   player_state['coins'],
-                                   's'[player_state['coins']==1:]))
-            # If current player is out of tokens, they must take it;
-            # otherwise, ask if current player wants it
-            try:
-                took_card = player_state['coins'] == 0 or player.play(card, pot)
-            except Exception as e:
-                took_card = False
-                logger.info(('Player {} raised an exception during the ' +
-                             '"play" step.').format(player))
-
-            # Notify all players of action chosen (with card and pot from beginning of turn)
-            for p in self.players:
-                try:
-                    p.update(player_id, card, pot, took_card)
-                except Exception as e:
-                    logger.info(('Player {} raised an exception during the ' +
-                                '"update" step.').format(player))
-
-            if took_card:
-                player_state['cards'].add(card)
-                player_state['coins'] += pot
-                logger.debug(('TAKE: Player {} took them and now ' +
-                              'has {} and {} coin{}.'
-                              ).format(player, list(player_state['cards']),
-                                       player_state['coins'],
-                                       's'[player_state['coins']==1:]))
-                if self.deck:
-                    card = self.deal_card()
-                    pot = 0
-                    logger.debug('DEAL: The next card is {}. (Pot reset to 0.)'.format(card))
-                else:  # game over
-                    logger.debug('END: Game over!')
-                    break
-            else:
-                player_state['coins'] -= 1
-                logger.debug(('PASS: Player {} said "No Thanks!" and now ' +
-                              'has {} coin{}. The pot now has {} coin{}.'
-                              ).format(player, player_state['coins'],
-                                       's'[player_state['coins']==1:],
-                                       pot, 's'[pot==1:]))
-                pot += 1
-                player = next(player_cycler)
-                player_id = id(player)
-                player_state = self.state[player_id]
+        while player:
+            took_card = self.player_action(player, card, pot)
+            self.notify_players(player, card, pot, took_card)
+            player, card, pot = self.update_game(player, card, pot, took_card)
 
         # Tally final scores
         scores = self.get_scores()
