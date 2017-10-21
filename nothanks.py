@@ -64,6 +64,8 @@ class Game():
     def __init__(self, players, starting_coins=11,
                  low_card=3, high_card=35, discard=9):
         # Too keep track of player states for rule enforcement and scoring
+        self.card = None
+        self.pot = 0
         self.state = {}
         for player in players:
             self.state[id(player)] = {'cards': SortedSet(),
@@ -73,6 +75,7 @@ class Game():
         self.players = players.copy()  # keep a local copy of the player list
         shuffle(self.players)  # randomize play order
         self.player_cycler = cycle(self.players)
+        self.current_player = None
 
         # The deck of cards (create, shuffle, then discard)
         self.deck = list(range(low_card, high_card + 1))
@@ -147,8 +150,8 @@ class Game():
                                     new_pot, 's'[new_pot==1:]))
         return next_player, next_card, new_pot
 
-    def run(self):
-        """Set-up, play, and score a game of No Thanks."""
+    def setup_game(self):
+        """Set up a fresh game of No Thanks."""
         # Have players prepare for new game and tell them the player order
         logger.debug('START: Starting new game with players {}.'.format(self.players))
         player_order = [id(p) for p in self.players]
@@ -158,16 +161,24 @@ class Game():
             except Exception as e:
                 logger.info(('Player {} raised an exception during the ' +
                              '"prepare_for_new_game" step.').format(player))
+        self.current_player = next(self.player_cycler)
+        self.card = self.deal_card()
+        self.pot = 0
 
+    def play(self):
+        """Play the game."""
         # Play until out of cards (when update_game returns None, None, None)
-        player = next(self.player_cycler)
-        card = self.deal_card()
-        pot = 0
-        while player:
-            took_card = self.player_action(player, card, pot)
-            self.notify_players(player, card, pot, took_card)
-            player, card, pot = self.update_game(player, card, pot, took_card)
+        while self.current_player:
+            took_card = self.player_action(self.current_player, self.card, self.pot)
+            self.notify_players(self.current_player, self.card, self.pot, took_card)
+            next_player, next_card, new_pot = self.update_game(self.current_player,
+                                                               self.card, self.pot, took_card)
+            self.current_player = next_player
+            self.card = next_card
+            self.pot = new_pot
 
+    def get_results(self):
+        """Score the game."""
         # Tally final scores
         scores = self.get_scores()
         winning_score = min(scores.values())
@@ -179,6 +190,12 @@ class Game():
         # Return the list of winners (ids) and all players' scores
         logger.debug('RESULT: {}'.format(scores))
         return winners, scores
+
+    def run(self):
+        """Set-up, play, and score a game of No Thanks."""
+        self.setup_game()
+        self.play()
+        return self.get_results()
 
     def get_scores(self):
         """Calculate score of game."""
