@@ -3,6 +3,7 @@
 from itertools import cycle
 import logging
 from random import shuffle
+from sortedcontainers import SortedSet
 
 logger = logging.getLogger(__name__)
 # It is poor practice to configure a logger in a module, instead, configure it as needed wherever it is used.
@@ -67,7 +68,7 @@ class Game():
         self.pot = 0
         self.state = {}
         for player in players:
-            self.state[id(player)] = {'cards': set(),
+            self.state[id(player)] = {'cards': SortedSet(),
                                       'coins': starting_coins}
 
         # A list of Player objects
