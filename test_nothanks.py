@@ -1,5 +1,4 @@
 import nothanks
-from sortedcontainers import SortedSet
 import pytest
 
 def test_scoring():
@@ -10,19 +9,19 @@ def test_scoring():
     pid = id(player)
     player_state = game.state[pid]
 
-    player_state['cards'] = SortedSet()
+    player_state['cards'] = set()
     player_state['coins'] = 0
     assert game.get_scores()[pid] == 0
 
-    player_state['cards'] = SortedSet()
+    player_state['cards'] = set()
     player_state['coins'] = 55
     assert game.get_scores()[pid] == -55
 
-    player_state['cards'] = SortedSet(range(3, 36))
+    player_state['cards'] = set(range(3, 36))
     player_state['coins'] = 0
     assert game.get_scores()[pid] == 3
 
-    player_state['cards'] = SortedSet([10, 11, 12, 14, 16, 17])
+    player_state['cards'] = set([10, 11, 12, 14, 16, 17])
     player_state['coins'] = 8
     assert game.get_scores()[pid] == 10 + 14 + 16 - 8
 
