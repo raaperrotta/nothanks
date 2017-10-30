@@ -119,6 +119,12 @@ class Strategy():
         return (state.card_in_play, state.pot,
                 *((tuple(p.cards), p.coins) for p in state.players))
 
+    def get_prob_take(self, state, use_average):
+        """Return the mixed-strategy probability of taking."""
+        key = 'average_strategy' if use_average else 'strategy'
+        state_hash = self.prehash(state)
+        return self.data[state_hash][key]
+
     def run_partial_game(self, state):
         """Set up a mid-play game of No Thanks."""
         players = [Player(self.data, num_players=self.num_players,
@@ -167,7 +173,7 @@ class Strategy():
     def train(self, num_games, print_progress=True):
         # Create a set of identical players, each referencing this game tree
         logger.debug('Creating {} players with which to train this CRM strategy.'.format(self.num_players))
-        players = [Player(self.data, num_players=self.num_players,
+        players = [Player(self, num_players=self.num_players,
                           starting_coins=self.starting_coins,
                           low_card=self.low_card,
                           high_card=self.high_card,
@@ -243,9 +249,10 @@ class Strategy():
 
 class Player(nothanks.Player):
     
-    def __init__(self, strategy, num_players=2, starting_coins=1,
+    def __init__(self, strategy, use_avg=False, num_players=2, starting_coins=1,
                  low_card=1, high_card=3, discard=1):
         self.strategy = strategy
+        self.use_avg = use_avg
         self.state = GameState(num_players=num_players,
                                 starting_coins=starting_coins,
                                 low_card=low_card, high_card=high_card,
@@ -258,7 +265,7 @@ class Player(nothanks.Player):
         # and this is our first look at the next card.
         if self.state.card_in_play is None:
             self.state.deal(card)
-        prob_take = self.strategy[self.state]['strategy']
+        prob_take = self.strategy.get_prob_take(self.state, self.use_avg)
         take = random() < prob_take
         self.history.append((deepcopy(self.state), take))
         return take
@@ -293,21 +300,22 @@ def main():
     nothanks_log.setLevel(level=logging.DEBUG)
     nothanks_log.addHandler(logging.StreamHandler(sys.stdout))
 
-    strategy = Strategy(num_players=2, starting_coins=2,
+    naive = Strategy(num_players=2, starting_coins=2,
                      low_card=1, high_card=3, discard=1)
-    strategy.train(2, print_progress=False)
+    trained = deepcopy(naive)
+    trained.train(2, print_progress=False)
 
     logger.setLevel(level=logging.WARNING)
     nothanks_log.setLevel(level=logging.WARNING)
 
     start = time()
-    strategy.train(1000)
+    trained.train(100)
     elapsed = time() - start
 
     # Pandas DataFrame print options
     pd.set_option('display.width', 9999)
     pd.set_option('display.max_rows', 9999)
-    print(pd.DataFrame(strategy.reduce()).transpose())
+    print(pd.DataFrame(trained.data).transpose())
     print('Took {} seconds.'.format(elapsed))
 
 
