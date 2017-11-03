@@ -1,6 +1,6 @@
 """Define the base class for counterfactual regret minimizing players."""
 from collections import defaultdict
-from copy import deepcopy
+import pickle
 import logging
 import networkx as nx
 import pandas as pd
@@ -13,7 +13,6 @@ import nothanks
 
 logger = logging.getLogger(__name__)
 
-
 class PlayerState():
     """Define a class for tracking the cards and coins each player has."""
 
@@ -21,6 +20,11 @@ class PlayerState():
         """Create object with no cards and starting coins."""
         self.cards = set()
         self.coins = starting_coins
+
+    def copy(self):
+        new_state = PlayerState(self.coins)
+        new_state.cards = self.cards.copy()
+        return new_state
 
     def take(self, card, pot):
         """Add card and coins to collection."""
@@ -58,6 +62,17 @@ class GameState():
         self.pot = 0
         self.players = [PlayerState(starting_coins)
                         for _ in range(num_players)]
+
+    def copy(self):
+        new_state = GameState(num_players=self.num_players,
+                              starting_coins=self.starting_coins,
+                              low_card=self.low_card,
+                              high_card=self.high_card,
+                              discard=self.discard)
+        new_state.players = [p.copy() for p in self.players]
+        new_state.pot = self.pot
+        new_state.card_in_play = self.card_in_play
+        return new_state
 
     def deal(self, card):
         """Put a card into play"""
@@ -135,7 +150,7 @@ class Strategy():
                     for _ in range(self.num_players)]
         # Set each player state to current game state
         for idx, player in enumerate(players):
-            player.state = deepcopy(state)
+            player.state = state.copy()
         # Create a fresh No Thanks game with these players
         game = nothanks.Game(players,
                              starting_coins=self.starting_coins,
@@ -159,7 +174,7 @@ class Strategy():
 
     def get_expected_payoff(self, state, action, num_iter=1000):
         """Return expected payoff for a possible action."""
-        new_state = deepcopy(state)
+        new_state = state.copy()
         if action:
             new_state.take()
         else:
@@ -267,7 +282,7 @@ class Player(nothanks.Player):
             self.state.deal(card)
         prob_take = self.strategy.get_prob_take(self.state, self.use_avg)
         take = random() < prob_take
-        self.history.append((deepcopy(self.state), take))
+        self.history.append((self.state.copy(), take))
         return take
 
     def update(self, player_id, card, pot, action):
@@ -302,7 +317,8 @@ def main():
 
     naive = Strategy(num_players=2, starting_coins=2,
                      low_card=1, high_card=3, discard=1)
-    trained = deepcopy(naive)
+    trained = Strategy(num_players=2, starting_coins=2,
+                       low_card=1, high_card=3, discard=1)
     trained.train(2, print_progress=False)
 
     logger.setLevel(level=logging.WARNING)
